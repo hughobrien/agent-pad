@@ -13,6 +13,7 @@ Architecture:
 from __future__ import annotations
 
 import logging
+import os
 import subprocess
 import sys
 
@@ -62,10 +63,31 @@ RECONNECT_PUMP_INTERVAL_S = 0.05
 REATTACH_POLL_INTERVAL_S = 2.0
 
 
+def find_tmux() -> str:
+    """Resolve tmux's absolute path via a login shell so we inherit the user's
+    full PATH (Nix, Homebrew, etc.). launchd-spawned processes start with a
+    minimal PATH that won't include /nix/store/.../bin or /opt/homebrew/bin.
+    """
+    shell = os.environ.get("SHELL", "/bin/zsh")
+    try:
+        result = subprocess.run(
+            [shell, "-lc", "command -v tmux"],
+            capture_output=True, text=True, check=False, timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except (subprocess.TimeoutExpired, FileNotFoundError) as exc:
+        log.warning("Could not resolve tmux via %s: %s", shell, exc)
+    return "tmux"  # last-ditch; will raise FileNotFoundError on use if missing
+
+
+TMUX = find_tmux()
+
+
 def resolve_tmux_target() -> str | None:
     """Return tmux target spec for the first window with name ending in -x."""
     result = subprocess.run(
-        ["tmux", "list-windows", "-a",
+        [TMUX, "list-windows", "-a",
          "-F", "#{session_name}:#{window_index} #{window_name}"],
         capture_output=True, text=True, check=False,
     )
@@ -79,12 +101,15 @@ def resolve_tmux_target() -> str | None:
 
 
 def send_keystroke(digit: str) -> None:
-    target = resolve_tmux_target()
-    if target is None:
-        log.debug("no -x window; dropping %s", digit)
-        return
-    log.info("sending %s -> %s", digit, target)
-    subprocess.run(["tmux", "send-keys", "-t", target, digit], check=False)
+    try:
+        target = resolve_tmux_target()
+        if target is None:
+            log.debug("no -x window; dropping %s", digit)
+            return
+        log.info("sending %s -> %s", digit, target)
+        subprocess.run([TMUX, "send-keys", "-t", target, digit], check=False)
+    except Exception:
+        log.exception("send_keystroke failed for %r", digit)
 
 
 class ClaudeTapDelegate(NSObject):
