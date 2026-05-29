@@ -1,0 +1,2 @@
+hidapi==0.14.0.post4
+pytest==8.3.3
