@@ -59,6 +59,7 @@ BUTTON_BITS = {
 BUTTON_TO_DIGIT = {"A": "1", "B": "2", "Y": "3"}
 
 RECONNECT_PUMP_INTERVAL_S = 0.05
+REATTACH_POLL_INTERVAL_S = 2.0
 
 
 def resolve_tmux_target() -> str | None:
@@ -98,6 +99,10 @@ class ClaudeTapDelegate(NSObject):
         self.input_char = None
         self.output_char = None
         self.prev_buttons: int = 0
+        # True once we've fully set up notifications. Cleared on disconnect.
+        # The main loop uses this to decide whether to poll for re-attach.
+        self.attached: bool = False
+        self._waiting_logged: bool = False
         return self
 
     def centralManagerDidUpdateState_(self, central):
@@ -105,19 +110,33 @@ class ClaudeTapDelegate(NSObject):
         log.info("CB state: %d", state)
         if state == 5:  # CBManagerStatePoweredOn
             self._try_attach()
+        else:
+            # Bluetooth got disabled (e.g., menu bar toggle, sleep). Drop the
+            # peripheral reference; we'll re-retrieve it when CB comes back.
+            self.peripheral = None
+            self.input_char = None
+            self.output_char = None
+            self.prev_buttons = 0
+            self.attached = False
 
     def _try_attach(self) -> None:
         peripherals = self.cm.retrieveConnectedPeripheralsWithServices_(
             [VENDOR_SVC_UUID]
         )
         if not peripherals:
-            log.warning("No Steam Controller found among connected peripherals. "
-                        "Is it bonded as a HID device?")
+            if not self._waiting_logged:
+                log.warning("Steam Controller not currently connected to macOS. "
+                            "Will poll every %ss; wake it and it'll appear.",
+                            REATTACH_POLL_INTERVAL_S)
+                self._waiting_logged = True
             return
+        self._waiting_logged = False
         self.peripheral = peripherals[0]
         log.info("Attaching to %s (id=%s)",
                  self.peripheral.name(),
                  self.peripheral.identifier().UUIDString())
+        # CB queues the connect request and fires it when the peripheral is
+        # reachable. No timeout, no manual retry needed.
         self.cm.connectPeripheral_options_(self.peripheral, None)
 
     def centralManager_didConnectPeripheral_(self, c, p):
@@ -126,15 +145,16 @@ class ClaudeTapDelegate(NSObject):
         p.discoverServices_([VENDOR_SVC_UUID])
 
     def centralManager_didFailToConnectPeripheral_error_(self, c, p, e):
-        log.error("Connect failed: %s — retrying", e)
-        self.cm.connectPeripheral_options_(p, None)
+        # Log only. Do NOT retry here — that creates a tight loop when CB is
+        # offline. The disconnect / state-update handlers cover real recovery.
+        log.error("Connect failed: %s", e)
 
     def centralManager_didDisconnectPeripheral_error_(self, c, p, e):
-        log.warning("Disconnected (%s) — reconnecting", e)
+        log.warning("Disconnected (%s) — will poll until peripheral returns", e)
         self.input_char = None
         self.output_char = None
         self.prev_buttons = 0
-        self.cm.connectPeripheral_options_(p, None)
+        self.attached = False
 
     def peripheral_didDiscoverServices_(self, peripheral, error):
         if error:
@@ -168,6 +188,7 @@ class ClaudeTapDelegate(NSObject):
         if self.input_char is not None:
             peripheral.setNotifyValue_forCharacteristic_(True, self.input_char)
             log.info("Subscribed to input notifications")
+        self.attached = True
 
     def peripheral_didUpdateValueForCharacteristic_error_(
         self, peripheral, ch, error
@@ -193,13 +214,25 @@ class ClaudeTapDelegate(NSObject):
 
 
 def run_forever() -> None:
+    import time
     delegate = ClaudeTapDelegate.alloc().init()
     cm = CBCentralManager.alloc().initWithDelegate_queue_(delegate, None)
     delegate.cm = cm
     rl = NSRunLoop.currentRunLoop()
     log.info("Event loop started")
+    # Skip the very first poll iteration so the state-update callback owns
+    # the initial attach. Otherwise both would fire within the same tick.
+    last_attach_poll = time.monotonic()
     while True:
         rl.runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(RECONNECT_PUMP_INTERVAL_S))
+        # If we're not attached and CB is powered on, periodically re-try
+        # retrieveConnectedPeripheralsWithServices in case the controller
+        # has reconnected to macOS.
+        if not delegate.attached and cm.state() == 5:
+            now = time.monotonic()
+            if now - last_attach_poll > REATTACH_POLL_INTERVAL_S:
+                last_attach_poll = now
+                delegate._try_attach()
 
 
 def main() -> int:
