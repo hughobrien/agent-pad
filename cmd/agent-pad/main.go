@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Hugh O'Brien
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
 // agent-pad: Steam Controller (BLE) -> tmux keystroke bridge.
 //
 // See docs/specs/2026-05-29-agent-pad-design.md for the architecture and

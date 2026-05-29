@@ -96,9 +96,9 @@ The main loop is a `time.Ticker` firing every 50 ms — it triggers periodic re-
 
 ### tmux path resolution
 
-`launchd`-spawned processes inherit a stripped PATH (`/usr/bin:/bin:/usr/sbin:/sbin`). Hugh's tmux is installed via Nix at `/nix/store/<hash>-tmux-<version>/bin/tmux`, which is not on launchd's PATH. Sourcing `.zshrc` from a child shell at daemon startup turned out to be unreliable (empty PATH propagation under `env -i`-style invocation).
+`launchd`-spawned processes inherit a stripped PATH (`/usr/bin:/bin:/usr/sbin:/sbin`). Tools installed via Nix (`/nix/store/<hash>-tmux-<version>/bin/`) or Homebrew (`/opt/homebrew/bin/`) aren't on it. Sourcing `.zshrc` from a child shell at daemon startup turned out to be unreliable (PATH setup typically lives in `.zshrc`, which login non-interactive shells don't source, and interactive shells may behave differently under launchd's restricted env).
 
-Solution: resolve the tmux path once at install time (in `bootstrap.sh`, which runs from the user's interactive shell) and bake the result into the plist's `EnvironmentVariables.TMUX_BIN`. The daemon reads `$TMUX_BIN` at startup, falls back to `exec.LookPath("tmux")` for non-launchd invocations. If Hugh upgrades tmux via Nix (changing the store hash), re-running `bootstrap.sh` regenerates the plist.
+Solution: resolve the tmux path once at install time (in `bootstrap.sh`, which runs from the user's interactive shell) and bake the result into the plist's `EnvironmentVariables.TMUX_BIN`. The daemon reads `$TMUX_BIN` at startup, falls back to `exec.LookPath("tmux")` for non-launchd invocations. If tmux's path changes (e.g. a Nix upgrade changes the store hash), re-run `bootstrap.sh` to regenerate the plist.
 
 ## Setup constraints
 

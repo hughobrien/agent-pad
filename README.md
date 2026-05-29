@@ -103,3 +103,7 @@ tail -f ~/Library/Logs/agent-pad.log
 ## History
 
 Originally built in Python with PyObjC, rewritten in Go for single-binary distribution. The Python version is in git history if you're curious about the iteration.
+
+## License
+
+GPL-3.0-or-later. See [LICENSE](LICENSE).
