@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://frinkiac.com/comic/img?b=AQIBBlMwN0UwN_7rDAABEvQBygMfSSBqdXN0IHRyaXBsZWQgbXkgcHJvZHVjdGl2aXR5LgA" alt="agent-pad hero image" width="600">
+</p>
+
 # agent-pad
 
 A tiny macOS background daemon that turns a Steam Controller into a single-purpose answering machine for Claude Code (or any tmux pane). Tap **A** to send `1` to your Claude window. **B** sends `2`. **Y** sends `3`. Without touching your focused window.
