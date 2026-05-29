@@ -70,9 +70,12 @@ def find_tmux() -> str:
     """
     shell = os.environ.get("SHELL", "/bin/zsh")
     try:
+        # -ilc: interactive + login, so .zshrc is sourced. Required because the
+        # daemon's PATH (under launchd) doesn't include Nix/Homebrew paths;
+        # those are set in .zshrc, not .zprofile, for the user.
         result = subprocess.run(
-            [shell, "-lc", "command -v tmux"],
-            capture_output=True, text=True, check=False, timeout=5,
+            [shell, "-ilc", "command -v tmux"],
+            capture_output=True, text=True, check=False, timeout=10,
         )
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip()
