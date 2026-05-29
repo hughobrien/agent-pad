@@ -8,7 +8,7 @@
 
   <key>ProgramArguments</key>
   <array>
-    <string>__HOME__/src/agent-pad/bin/agent-pad</string>
+    <string>__BINARY__</string>
   </array>
 
   <key>RunAtLoad</key>
@@ -21,10 +21,10 @@
   <integer>5</integer>
 
   <key>StandardOutPath</key>
-  <string>__HOME__/Library/Logs/agent-pad.log</string>
+  <string>__LOG__</string>
 
   <key>StandardErrorPath</key>
-  <string>__HOME__/Library/Logs/agent-pad.log</string>
+  <string>__LOG__</string>
 
   <key>EnvironmentVariables</key>
   <dict>

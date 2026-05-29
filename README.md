@@ -19,13 +19,23 @@ Claude Code asks a lot of numbered yes/no/which-of-these questions during long a
 
 ## Install
 
+### From source
+
 ```sh
 git clone https://github.com/hughobrien/agent-pad ~/src/agent-pad
 cd ~/src/agent-pad
 ./bootstrap.sh
 ```
 
-`bootstrap.sh` builds the binary, installs a launchd agent, and loads it. macOS will prompt for Bluetooth access on first run — allow it.
+### From a release tarball (no Go toolchain needed)
+
+```sh
+mkdir -p ~/src/agent-pad && cd ~/src/agent-pad
+curl -L https://github.com/hughobrien/agent-pad/releases/latest/download/agent-pad_<version>_darwin_arm64.tar.gz | tar -xz
+./bootstrap.sh
+```
+
+Either way, `bootstrap.sh` installs a launchd agent and loads it. macOS will prompt for Bluetooth access on first run — allow it.
 
 Verify:
 

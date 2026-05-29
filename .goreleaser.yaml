@@ -1,0 +1,59 @@
+version: 2
+
+project_name: agent-pad
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: agent-pad
+    main: ./cmd/agent-pad
+    binary: agent-pad
+    env:
+      - CGO_ENABLED=1
+    goos: [darwin]
+    goarch: [arm64]
+    ldflags:
+      - -s -w
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+      - bootstrap.sh
+      - launchd/agent-pad.plist
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))?!?:.+$'
+      order: 0
+    - title: Fixes
+      regexp: '^.*?fix(\(.+\))?!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
+  filters:
+    exclude:
+      - '^docs:'
+      - '^chore:'
+      - '^ci:'
+
+release:
+  github:
+    owner: hughobrien
+    name: agent-pad
+  draft: false
+  prerelease: auto
