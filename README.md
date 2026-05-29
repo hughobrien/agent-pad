@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://frinkiac.com/comic/img?b=AQIBBlMwN0UwN_7rDAABEvQBygMfSSBqdXN0IHRyaXBsZWQgbXkgcHJvZHVjdGl2aXR5LgA" alt="agent-pad hero image" width="600">
+  <img src="docs/hero.jpg" alt="agent-pad hero image" width="600">
 </p>
 
 # agent-pad
