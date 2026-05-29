@@ -64,24 +64,21 @@ REATTACH_POLL_INTERVAL_S = 2.0
 
 
 def find_tmux() -> str:
-    """Resolve tmux's absolute path via a login shell so we inherit the user's
-    full PATH (Nix, Homebrew, etc.). launchd-spawned processes start with a
-    minimal PATH that won't include /nix/store/.../bin or /opt/homebrew/bin.
+    """Resolve tmux's absolute path.
+
+    Preferred: TMUX_BIN env var (set by the launchd plist, populated by
+    bootstrap.sh at install time from the user's interactive shell).
+    Fallback: PATH lookup, fine when running the daemon interactively.
     """
-    shell = os.environ.get("SHELL", "/bin/zsh")
-    try:
-        # -ilc: interactive + login, so .zshrc is sourced. Required because the
-        # daemon's PATH (under launchd) doesn't include Nix/Homebrew paths;
-        # those are set in .zshrc, not .zprofile, for the user.
-        result = subprocess.run(
-            [shell, "-ilc", "command -v tmux"],
-            capture_output=True, text=True, check=False, timeout=10,
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            return result.stdout.strip()
-    except (subprocess.TimeoutExpired, FileNotFoundError) as exc:
-        log.warning("Could not resolve tmux via %s: %s", shell, exc)
-    return "tmux"  # last-ditch; will raise FileNotFoundError on use if missing
+    env_path = os.environ.get("TMUX_BIN")
+    if env_path and os.path.exists(env_path):
+        return env_path
+    import shutil
+    found = shutil.which("tmux")
+    if found:
+        return found
+    log.warning("tmux not found via TMUX_BIN env or PATH; sends will fail.")
+    return "tmux"
 
 
 TMUX = find_tmux()
