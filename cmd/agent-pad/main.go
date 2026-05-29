@@ -1,6 +1,6 @@
-// claude-tap: Steam Controller (BLE) -> tmux keystroke bridge.
+// agent-pad: Steam Controller (BLE) -> tmux keystroke bridge.
 //
-// See docs/specs/2026-05-29-claude-tap-design.md for the architecture and
+// See docs/specs/2026-05-29-agent-pad-design.md for the architecture and
 // exact GATT byte sequences. Short version: we hold a CoreBluetooth
 // connection to the Steam Controller's vendor service in parallel with macOS
 // owning it as a HID device, write the disable-lizard command, and translate
@@ -247,7 +247,7 @@ func (a *agent) DidUpdateValueForCharacteristic(prph cbgo.Peripheral, ch cbgo.Ch
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-	log.Print("claude-tap starting")
+	log.Print("agent-pad starting")
 
 	a := &agent{}
 	a.cm = cbgo.NewCentralManager(nil)

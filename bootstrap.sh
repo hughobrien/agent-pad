@@ -2,13 +2,13 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")" && pwd)"
-PLIST_NAME="com.hugh.claude-tap.plist"
+PLIST_NAME="com.hugh.agent-pad.plist"
 INSTALLED_PLIST="$HOME/Library/LaunchAgents/$PLIST_NAME"
-BINARY="$REPO/bin/claude-tap"
+BINARY="$REPO/bin/agent-pad"
 
 echo "==> Building"
 mkdir -p "$REPO/bin"
-(cd "$REPO" && go build -o "$BINARY" ./cmd/claude-tap)
+(cd "$REPO" && go build -o "$BINARY" ./cmd/agent-pad)
 
 echo "==> Resolving tmux path"
 TMUX_BIN="$(command -v tmux || true)"
@@ -28,8 +28,8 @@ launchctl unload "$INSTALLED_PLIST" 2>/dev/null || true
 launchctl load "$INSTALLED_PLIST"
 
 echo
-echo "Done. Verify with: launchctl list | grep claude-tap"
-echo "Logs: ~/Library/Logs/claude-tap.log"
+echo "Done. Verify with: launchctl list | grep agent-pad"
+echo "Logs: ~/Library/Logs/agent-pad.log"
 echo
 echo "If macOS prompts for Bluetooth permission on first run, allow it in"
 echo "System Settings > Privacy & Security > Bluetooth."

@@ -1,4 +1,4 @@
-# claude-tap: Steam Controller → tmux keystroke bridge
+# agent-pad: Steam Controller → tmux keystroke bridge
 
 > Updated 2026-05-29 to match the as-built implementation. The original spec assumed HIDAPI; the macOS BLE HID stack forced a CoreBluetooth-based design instead. First implementation was Python+PyObjC; subsequently rewritten in Go for single-binary distribution. The architecture is identical between the two; only the language and library names differ (PyObjC ↔ tinygo-org/cbgo). The history is preserved in commits.
 
@@ -74,7 +74,7 @@ Edge-triggered on 0→1 transitions per bit; holding does not repeat.
 
 ## Architecture
 
-One process running as a launchd user agent. Implemented in Go (`cmd/claude-tap/main.go`) using `github.com/tinygo-org/cbgo` for CoreBluetooth bindings. Builds to a single static binary (~3MB). Production build via `bootstrap.sh`.
+One process running as a launchd user agent. Implemented in Go (`cmd/agent-pad/main.go`) using `github.com/tinygo-org/cbgo` for CoreBluetooth bindings. Builds to a single static binary (~3MB). Production build via `bootstrap.sh`.
 
 A CBCentralManager owns one delegate object that implements both the CBCentralManager and CBPeripheral delegate protocols. The flow:
 
@@ -108,8 +108,8 @@ Solution: resolve the tmux path once at install time (in `bootstrap.sh`, which r
 
 ## Operational notes
 
-- **Logs:** `~/Library/Logs/claude-tap.log`.
-- **Restart:** `launchctl unload ~/Library/LaunchAgents/com.hugh.claude-tap.plist && launchctl load …` (or re-run `bootstrap.sh`).
+- **Logs:** `~/Library/Logs/agent-pad.log`.
+- **Restart:** `launchctl unload ~/Library/LaunchAgents/com.hugh.agent-pad.plist && launchctl load …` (or re-run `bootstrap.sh`).
 - **Heartbeat:** none. Disable-lizard persists until the BLE link drops.
 - **Reconnect cost:** ~3-5 seconds after a Bluetooth toggle, dominated by macOS re-bonding the controller. The daemon polls every 2 seconds and resumes once macOS reports the peripheral as connected.
 

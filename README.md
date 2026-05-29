@@ -1,10 +1,10 @@
-# claude-tap
+# agent-pad
 
 A tiny macOS background daemon that turns a Steam Controller into a single-purpose answering machine for Claude Code (or any tmux pane). Tap **A** to send `1` to your Claude window. **B** sends `2`. **Y** sends `3`. Without touching your focused window.
 
 ## What it's for
 
-Claude Code asks a lot of numbered yes/no/which-of-these questions during long agentic runs. If Claude lives on a side monitor, every answer means alt-tabbing over, typing one key, and finding your way back. With `claude-tap`, you keep the controller on your desk and tap the answer without ever looking away.
+Claude Code asks a lot of numbered yes/no/which-of-these questions during long agentic runs. If Claude lives on a side monitor, every answer means alt-tabbing over, typing one key, and finding your way back. With `agent-pad`, you keep the controller on your desk and tap the answer without ever looking away.
 
 ## Requirements
 
@@ -16,8 +16,8 @@ Claude Code asks a lot of numbered yes/no/which-of-these questions during long a
 ## Install
 
 ```sh
-git clone <repo-url> ~/src/claude-tap
-cd ~/src/claude-tap
+git clone <repo-url> ~/src/agent-pad
+cd ~/src/agent-pad
 ./bootstrap.sh
 ```
 
@@ -26,8 +26,8 @@ cd ~/src/claude-tap
 Verify:
 
 ```sh
-launchctl list | grep claude-tap   # PID + exit code 0 = healthy
-tail -f ~/Library/Logs/claude-tap.log
+launchctl list | grep agent-pad   # PID + exit code 0 = healthy
+tail -f ~/Library/Logs/agent-pad.log
 ```
 
 ## Use
@@ -40,7 +40,7 @@ If no window's name ends in `-x`, taps are silently dropped. To stop accepting t
 
 ## Extending button mappings
 
-Open `cmd/claude-tap/main.go`. Add lines to `buttonToDigit`:
+Open `cmd/agent-pad/main.go`. Add lines to `buttonToDigit`:
 
 ```go
 var buttonToDigit = []struct {
@@ -69,7 +69,7 @@ The interesting part of this project is what it took to get the controller talki
 
 **The input.** Subscribe to GATT notifications on `100f6c33-…`. Reports where `byte[2] == 0x00` carry the full 24-bit button bitmap in bytes 3–5. We edge-detect 0→1 transitions and run `tmux send-keys -t <session:window> <digit>` to deliver the keystroke to the active pane of the first `-x`-suffixed window.
 
-See [`docs/specs/2026-05-29-claude-tap-design.md`](docs/specs/2026-05-29-claude-tap-design.md) for the full design, the GATT byte tables, and the reconnect/state-machine details. Credit for the protocol reverse engineering goes to [Dennis Hamester](https://dennis-hamester.gitlab.io/scraw/protocol/) and [Stany Marcel's `steamcontroller`](https://github.com/ynsta/steamcontroller).
+See [`docs/specs/2026-05-29-agent-pad-design.md`](docs/specs/2026-05-29-agent-pad-design.md) for the full design, the GATT byte tables, and the reconnect/state-machine details. Credit for the protocol reverse engineering goes to [Dennis Hamester](https://dennis-hamester.gitlab.io/scraw/protocol/) and [Stany Marcel's `steamcontroller`](https://github.com/ynsta/steamcontroller).
 
 ## Troubleshooting
 
@@ -79,7 +79,7 @@ See [`docs/specs/2026-05-29-claude-tap-design.md`](docs/specs/2026-05-29-claude-
 
 **Taps detected in the log but nothing lands in tmux** — Make sure the target window's name ends in `-x`. Run `tmux list-windows -a` to verify.
 
-**Cursor still moves when I touch the right trackpad** — The disable-lizard write didn't take. Check `~/Library/Logs/claude-tap.log` for `Sent disable-lizard`. If missing, the daemon never reached the discover callback — usually a Bluetooth permission issue.
+**Cursor still moves when I touch the right trackpad** — The disable-lizard write didn't take. Check `~/Library/Logs/agent-pad.log` for `Sent disable-lizard`. If missing, the daemon never reached the discover callback — usually a Bluetooth permission issue.
 
 ## Operations
 
@@ -88,10 +88,10 @@ See [`docs/specs/2026-05-29-claude-tap-design.md`](docs/specs/2026-05-29-claude-
 ./bootstrap.sh
 
 # Stop
-launchctl unload ~/Library/LaunchAgents/com.hugh.claude-tap.plist
+launchctl unload ~/Library/LaunchAgents/com.hugh.agent-pad.plist
 
 # Logs
-tail -f ~/Library/Logs/claude-tap.log
+tail -f ~/Library/Logs/agent-pad.log
 ```
 
 ## Caveats

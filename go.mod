@@ -1,4 +1,4 @@
-module claude-tap
+module agent-pad
 
 go 1.26.3
 

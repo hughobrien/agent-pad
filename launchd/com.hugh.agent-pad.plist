@@ -4,11 +4,11 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.hugh.claude-tap</string>
+  <string>com.hugh.agent-pad</string>
 
   <key>ProgramArguments</key>
   <array>
-    <string>__HOME__/src/claude-tap/bin/claude-tap</string>
+    <string>__HOME__/src/agent-pad/bin/agent-pad</string>
   </array>
 
   <key>RunAtLoad</key>
@@ -21,10 +21,10 @@
   <integer>5</integer>
 
   <key>StandardOutPath</key>
-  <string>__HOME__/Library/Logs/claude-tap.log</string>
+  <string>__HOME__/Library/Logs/agent-pad.log</string>
 
   <key>StandardErrorPath</key>
-  <string>__HOME__/Library/Logs/claude-tap.log</string>
+  <string>__HOME__/Library/Logs/agent-pad.log</string>
 
   <key>EnvironmentVariables</key>
   <dict>
