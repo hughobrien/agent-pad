@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")" && pwd)"
-PLIST_NAME="com.hugh.agent-pad.plist"
+PLIST_NAME="agent-pad.plist"
 INSTALLED_PLIST="$HOME/Library/LaunchAgents/$PLIST_NAME"
 BINARY="$REPO/bin/agent-pad"
 

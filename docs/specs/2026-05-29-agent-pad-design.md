@@ -109,7 +109,7 @@ Solution: resolve the tmux path once at install time (in `bootstrap.sh`, which r
 ## Operational notes
 
 - **Logs:** `~/Library/Logs/agent-pad.log`.
-- **Restart:** `launchctl unload ~/Library/LaunchAgents/com.hugh.agent-pad.plist && launchctl load …` (or re-run `bootstrap.sh`).
+- **Restart:** `launchctl unload ~/Library/LaunchAgents/agent-pad.plist && launchctl load …` (or re-run `bootstrap.sh`).
 - **Heartbeat:** none. Disable-lizard persists until the BLE link drops.
 - **Reconnect cost:** ~3-5 seconds after a Bluetooth toggle, dominated by macOS re-bonding the controller. The daemon polls every 2 seconds and resumes once macOS reports the peripheral as connected.
 

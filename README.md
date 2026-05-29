@@ -88,7 +88,7 @@ See [`docs/specs/2026-05-29-agent-pad-design.md`](docs/specs/2026-05-29-agent-pa
 ./bootstrap.sh
 
 # Stop
-launchctl unload ~/Library/LaunchAgents/com.hugh.agent-pad.plist
+launchctl unload ~/Library/LaunchAgents/agent-pad.plist
 
 # Logs
 tail -f ~/Library/Logs/agent-pad.log
