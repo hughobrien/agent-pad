@@ -16,7 +16,7 @@ Claude Code asks a lot of numbered yes/no/which-of-these questions during long a
 ## Install
 
 ```sh
-git clone <repo-url> ~/src/agent-pad
+git clone https://github.com/hughobrien/agent-pad ~/src/agent-pad
 cd ~/src/agent-pad
 ./bootstrap.sh
 ```
