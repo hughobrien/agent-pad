@@ -90,7 +90,7 @@ The main loop is a `time.Ticker` firing every 50 ms — it triggers periodic re-
 
 ## tmux integration
 
-`resolveTmuxTarget` runs `tmux list-windows -a -F "#{session_name}:#{window_index} #{window_name}"` and returns the first target whose `window_name` ends in `-x`. To mark a window, use tmux's native rename (`C-b ,`). If no `-x` window exists, the daemon drops the press silently.
+`resolveTmuxTarget` runs `tmux list-windows -a -F "#{session_name}:#{window_index} #{window_name}"` and returns the first target whose `window_name` ends in `-pad`. To mark a window, use tmux's native rename (`C-b ,`). If no `-pad` window exists, the daemon drops the press silently.
 
 `send_keystroke` runs `tmux send-keys -t <target> <digit>`. tmux routes the keystroke to the active pane of that window without touching macOS focus.
 

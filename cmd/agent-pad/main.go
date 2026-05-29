@@ -97,7 +97,7 @@ func resolveTmuxTarget() string {
 			continue
 		}
 		target, name := line[:sp], line[sp+1:]
-		if strings.HasSuffix(name, "-x") {
+		if strings.HasSuffix(name, "-pad") {
 			return target
 		}
 	}

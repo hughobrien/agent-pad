@@ -33,10 +33,10 @@ tail -f ~/Library/Logs/agent-pad.log
 ## Use
 
 1. Open a tmux window where you run Claude Code.
-2. Rename that window so its name ends in `-x` — `C-b ,` then type e.g. `claude-x`.
+2. Rename that window so its name ends in `-pad` — `C-b ,` then type e.g. `claude-pad`.
 3. Tap A on the controller. The digit `1` lands in that window's active pane. macOS focus stays where it is.
 
-If no window's name ends in `-x`, taps are silently dropped. To stop accepting taps, rename the window to anything else.
+If no window's name ends in `-pad`, taps are silently dropped. To stop accepting taps, rename the window to anything else.
 
 ## Extending button mappings
 
@@ -67,7 +67,7 @@ The interesting part of this project is what it took to get the controller talki
 
 **The bytes.** Write `0xC0 0x87 0x03 0x08 0x07 0x00` (with response) to characteristic `100f6c34-…`. That's `[BLE single-segment framing] [SET_SETTINGS] [3-byte arg] [LEFT_TRACKPAD_MODE] [value 0x07]`. Lizard mode goes dark. The disable persists as long as we hold the BLE connection — no heartbeat.
 
-**The input.** Subscribe to GATT notifications on `100f6c33-…`. Reports where `byte[2] == 0x00` carry the full 24-bit button bitmap in bytes 3–5. We edge-detect 0→1 transitions and run `tmux send-keys -t <session:window> <digit>` to deliver the keystroke to the active pane of the first `-x`-suffixed window.
+**The input.** Subscribe to GATT notifications on `100f6c33-…`. Reports where `byte[2] == 0x00` carry the full 24-bit button bitmap in bytes 3–5. We edge-detect 0→1 transitions and run `tmux send-keys -t <session:window> <digit>` to deliver the keystroke to the active pane of the first `-pad`-suffixed window.
 
 See [`docs/specs/2026-05-29-agent-pad-design.md`](docs/specs/2026-05-29-agent-pad-design.md) for the full design, the GATT byte tables, and the reconnect/state-machine details. Credit for the protocol reverse engineering goes to [Dennis Hamester](https://dennis-hamester.gitlab.io/scraw/protocol/) and [Stany Marcel's `steamcontroller`](https://github.com/ynsta/steamcontroller).
 
@@ -77,7 +77,7 @@ See [`docs/specs/2026-05-29-agent-pad-design.md`](docs/specs/2026-05-29-agent-pa
 
 **`tmux not found`** — Re-run `./bootstrap.sh`. Bootstrap resolves tmux's path from your interactive shell and bakes it into the launchd plist (necessary because launchd-spawned processes don't inherit Nix or Homebrew PATH).
 
-**Taps detected in the log but nothing lands in tmux** — Make sure the target window's name ends in `-x`. Run `tmux list-windows -a` to verify.
+**Taps detected in the log but nothing lands in tmux** — Make sure the target window's name ends in `-pad`. Run `tmux list-windows -a` to verify.
 
 **Cursor still moves when I touch the right trackpad** — The disable-lizard write didn't take. Check `~/Library/Logs/agent-pad.log` for `Sent disable-lizard`. If missing, the daemon never reached the discover callback — usually a Bluetooth permission issue.
 
