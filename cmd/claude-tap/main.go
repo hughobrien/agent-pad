@@ -124,17 +124,15 @@ type agent struct {
 
 	cm cbgo.CentralManager
 
-	mu             sync.Mutex
-	peripheral     *cbgo.Peripheral
-	inputChar      *cbgo.Characteristic
-	outputChar     *cbgo.Characteristic
-	prevButtons    uint32
-	attached       bool
-	waitingLogged  bool
+	mu            sync.Mutex
+	inputChar     *cbgo.Characteristic
+	outputChar    *cbgo.Characteristic
+	prevButtons   uint32
+	attached      bool
+	waitingLogged bool
 }
 
 func (a *agent) clearState() {
-	a.peripheral = nil
 	a.inputChar = nil
 	a.outputChar = nil
 	a.prevButtons = 0
@@ -165,7 +163,6 @@ func (a *agent) tryAttachLocked() {
 	}
 	a.waitingLogged = false
 	p := prphs[0]
-	a.peripheral = &p
 	log.Printf("Attaching to %s (id=%s)", p.Name(), p.Identifier().String())
 	a.cm.Connect(p, nil)
 }
@@ -210,7 +207,6 @@ func (a *agent) DidDiscoverCharacteristics(prph cbgo.Peripheral, svc cbgo.Servic
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	for _, ch := range svc.Characteristics() {
-		ch := ch
 		switch {
 		case bytes.Equal(ch.UUID(), inputCharUUID):
 			a.inputChar = &ch
