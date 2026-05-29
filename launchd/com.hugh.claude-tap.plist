@@ -8,8 +8,7 @@
 
   <key>ProgramArguments</key>
   <array>
-    <string>__HOME__/src/claude-tap/.venv/bin/python</string>
-    <string>__HOME__/src/claude-tap/claude_tap.py</string>
+    <string>__HOME__/src/claude-tap/bin/claude-tap</string>
   </array>
 
   <key>RunAtLoad</key>

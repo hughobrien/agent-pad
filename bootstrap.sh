@@ -4,12 +4,11 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")" && pwd)"
 PLIST_NAME="com.hugh.claude-tap.plist"
 INSTALLED_PLIST="$HOME/Library/LaunchAgents/$PLIST_NAME"
+BINARY="$REPO/bin/claude-tap"
 
-echo "==> Creating venv"
-[ -d "$REPO/.venv" ] || python3 -m venv "$REPO/.venv"
-
-echo "==> Installing dependencies"
-"$REPO/.venv/bin/pip" install -q -r "$REPO/requirements.txt"
+echo "==> Building"
+mkdir -p "$REPO/bin"
+(cd "$REPO" && go build -o "$BINARY" ./cmd/claude-tap)
 
 echo "==> Resolving tmux path"
 TMUX_BIN="$(command -v tmux || true)"
@@ -32,5 +31,5 @@ echo
 echo "Done. Verify with: launchctl list | grep claude-tap"
 echo "Logs: ~/Library/Logs/claude-tap.log"
 echo
-echo "If it can't access Bluetooth, macOS will prompt for permission on first run."
-echo "Grant it in System Settings > Privacy & Security > Bluetooth."
+echo "If macOS prompts for Bluetooth permission on first run, allow it in"
+echo "System Settings > Privacy & Security > Bluetooth."

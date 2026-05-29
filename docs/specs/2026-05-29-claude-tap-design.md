@@ -1,6 +1,6 @@
 # claude-tap: Steam Controller → tmux keystroke bridge
 
-> Updated 2026-05-29 to match the as-built implementation. The original spec assumed HIDAPI; the macOS BLE HID stack forced a CoreBluetooth-based design instead. The history of how we got here is preserved in commits and the implementation plan.
+> Updated 2026-05-29 to match the as-built implementation. The original spec assumed HIDAPI; the macOS BLE HID stack forced a CoreBluetooth-based design instead. First implementation was Python+PyObjC; subsequently rewritten in Go for single-binary distribution. The architecture is identical between the two; only the language and library names differ (PyObjC ↔ tinygo-org/cbgo). The history is preserved in commits.
 
 ## Problem
 
@@ -43,7 +43,7 @@ Six bytes, written with response:
  └────────────────────────── BLE single-segment framing header
 ```
 
-The disable persists for the lifetime of the BLE connection — no heartbeat needed. (Verified empirically: 60s idle with no resend, lizard mode stayed off.) On reconnect after a disconnect, the daemon's `peripheral_didDiscoverCharacteristicsForService_error_` callback fires again and re-sends.
+The disable persists for the lifetime of the BLE connection — no heartbeat needed. (Verified empirically: 60s idle with no resend, lizard mode stayed off.) On reconnect after a disconnect, the daemon's `DidDiscoverCharacteristics` callback fires again and re-sends.
 
 ### Button bitmap
 
@@ -74,23 +74,23 @@ Edge-triggered on 0→1 transitions per bit; holding does not repeat.
 
 ## Architecture
 
-One Python process running as a launchd user agent. Built on `pyobjc-framework-CoreBluetooth`. Single file (`claude_tap.py`), ~180 lines.
+One process running as a launchd user agent. Implemented in Go (`cmd/claude-tap/main.go`) using `github.com/tinygo-org/cbgo` for CoreBluetooth bindings. Builds to a single static binary (~3MB). Production build via `bootstrap.sh`.
 
 A CBCentralManager owns one delegate object that implements both the CBCentralManager and CBPeripheral delegate protocols. The flow:
 
-1. **Power-on:** `centralManagerDidUpdateState_` fires once when Bluetooth is ready, calls `_try_attach`.
-2. **Attach:** `_try_attach` runs `retrieveConnectedPeripheralsWithServices` filtered by the vendor service UUID. If empty (controller asleep or unbonded), logs and returns — the main loop will poll again in 2 seconds. If populated, calls `connectPeripheral`.
-3. **Connect:** `centralManager_didConnectPeripheral_` discovers the vendor service.
-4. **Discover:** `peripheral_didDiscoverCharacteristicsForService_error_` resolves the input and output characteristics, writes the disable-lizard command to output, and calls `setNotifyValue_forCharacteristic_(True)` on input. Sets `self.attached = True`.
-5. **Input loop:** `peripheral_didUpdateValueForCharacteristic_error_` fires per notification. Button reports (byte[2] == 0x00) get parsed into a 24-bit bitmap; press edges trigger `send_keystroke`.
-6. **Disconnect:** `centralManager_didDisconnectPeripheral_` clears `self.attached`. The main loop's poll then re-attempts attach every 2 seconds until the controller comes back.
-7. **Bluetooth off:** `centralManagerDidUpdateState_` fires with a non-`5` state. Drop the peripheral; do nothing further until state returns to `5`.
+1. **Power-on:** `CentralManagerDidUpdateState` fires once when Bluetooth is ready, calls the attach helper.
+2. **Attach:** The attach helper runs `RetrieveConnectedPeripheralsWithServices` filtered by the vendor service UUID. If empty (controller asleep or unbonded), logs and returns — the main loop will poll again in 2 seconds. If populated, calls `Connect`.
+3. **Connect:** `DidConnectPeripheral` discovers the vendor service.
+4. **Discover:** `DidDiscoverCharacteristics` resolves the input and output characteristics, writes the disable-lizard command to output (with response), and enables notifications on input. Sets the `attached` flag.
+5. **Input loop:** `DidUpdateValueForCharacteristic` fires per notification. Button reports (byte[2] == 0x00) get parsed into a 24-bit bitmap; press edges trigger `sendKeystroke`.
+6. **Disconnect:** `DidDisconnectPeripheral` clears state. The main loop's poll then re-attempts attach every 2 seconds until the controller comes back.
+7. **Bluetooth off:** `CentralManagerDidUpdateState` fires with a non-PoweredOn state. Drop the peripheral; do nothing further until state returns to PoweredOn.
 
-The main loop is a `runUntilDate_` call in a Python `while True:` — it pumps the CoreFoundation runloop in 50 ms increments and handles the periodic poll for re-attach.
+The main loop is a `time.Ticker` firing every 50 ms — it triggers periodic re-attach polls while cbgo's internal dispatch handles CB callbacks on its own thread. A signal handler catches SIGTERM/SIGINT for clean launchd-managed shutdown.
 
 ## tmux integration
 
-`resolve_tmux_target` runs `tmux list-windows -a -F "#{session_name}:#{window_index} #{window_name}"` and returns the first target whose `window_name` ends in `-x`. To mark a window, use tmux's native rename (`C-b ,`). If no `-x` window exists, the daemon drops the press silently.
+`resolveTmuxTarget` runs `tmux list-windows -a -F "#{session_name}:#{window_index} #{window_name}"` and returns the first target whose `window_name` ends in `-x`. To mark a window, use tmux's native rename (`C-b ,`). If no `-x` window exists, the daemon drops the press silently.
 
 `send_keystroke` runs `tmux send-keys -t <target> <digit>`. tmux routes the keystroke to the active pane of that window without touching macOS focus.
 
@@ -98,7 +98,7 @@ The main loop is a `runUntilDate_` call in a Python `while True:` — it pumps t
 
 `launchd`-spawned processes inherit a stripped PATH (`/usr/bin:/bin:/usr/sbin:/sbin`). Hugh's tmux is installed via Nix at `/nix/store/<hash>-tmux-<version>/bin/tmux`, which is not on launchd's PATH. Sourcing `.zshrc` from a child shell at daemon startup turned out to be unreliable (empty PATH propagation under `env -i`-style invocation).
 
-Solution: resolve the tmux path once at install time (in `bootstrap.sh`, which runs from the user's interactive shell) and bake the result into the plist's `EnvironmentVariables.TMUX_BIN`. The daemon reads `$TMUX_BIN` at startup, falls back to `shutil.which("tmux")` for non-launchd invocations. If Hugh upgrades tmux via Nix (changing the store hash), re-running `bootstrap.sh` regenerates the plist.
+Solution: resolve the tmux path once at install time (in `bootstrap.sh`, which runs from the user's interactive shell) and bake the result into the plist's `EnvironmentVariables.TMUX_BIN`. The daemon reads `$TMUX_BIN` at startup, falls back to `exec.LookPath("tmux")` for non-launchd invocations. If Hugh upgrades tmux via Nix (changing the store hash), re-running `bootstrap.sh` regenerates the plist.
 
 ## Setup constraints
 
