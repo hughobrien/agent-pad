@@ -33,8 +33,17 @@ var (
 // Single-segment framing 0xC0 + SET_SETTINGS 0x87 + 3-byte arg + reg LEFT_TRACKPAD_MODE 0x08 + value 0x07.
 var disableLizard = []byte{0xC0, 0x87, 0x03, 0x08, 0x07, 0x00}
 
+// btnSegmentFlag is the bit in the report's segment-flags byte (data[1]) that
+// marks the presence of the button bitmap. The Steam Controller's BLE vendor
+// channel packs only the segments that changed; analog segments (triggers,
+// joystick, trackpads) arrive in reports that share data[2]==0x00 with button
+// reports but carry no button bitmap. Gating on data[2] (the original spec's
+// assumption) therefore misread analog bytes at data[3..5] as button presses.
+const btnSegmentFlag = 0x10
+
 // 24-bit button bitmap formed by combining bytes[3..5] of a button report
-// (byte[2]==0x00). See https://dennis-hamester.gitlab.io/scraw/protocol/.
+// (one whose data[1]&btnSegmentFlag is set). See
+// https://dennis-hamester.gitlab.io/scraw/protocol/.
 const (
 	btnRightGrip          uint32 = 0x000001
 	btnLeftTrackpadStick  uint32 = 0x000002
@@ -74,6 +83,10 @@ const (
 // tmuxBin is resolved at startup. Prefers $TMUX_BIN (set by the launchd plist
 // at install time), falls back to PATH lookup.
 var tmuxBin = resolveTmux()
+
+// debugReports, when AGENT_PAD_DEBUG is set, logs the raw hex of every input
+// report so button bit offsets/masks can be verified against real hardware.
+var debugReports = os.Getenv("AGENT_PAD_DEBUG") != ""
 
 func resolveTmux() string {
 	if p := os.Getenv("TMUX_BIN"); p != "" {
@@ -228,15 +241,29 @@ func (a *agent) DidDiscoverCharacteristics(prph cbgo.Peripheral, svc cbgo.Servic
 	a.attached = true
 }
 
+// parseButtons extracts the 24-bit button bitmap from an input report. It
+// returns ok=false for reports that carry no button segment (analog-only or
+// status reports), whose data[3..5] hold non-button bytes that must not be
+// interpreted as presses.
+func parseButtons(data []byte) (uint32, bool) {
+	if len(data) < 6 || data[1]&btnSegmentFlag == 0 {
+		return 0, false
+	}
+	return uint32(data[3])<<16 | uint32(data[4])<<8 | uint32(data[5]), true
+}
+
 func (a *agent) DidUpdateValueForCharacteristic(prph cbgo.Peripheral, ch cbgo.Characteristic, err error) {
 	if err != nil {
 		return
 	}
 	data := ch.Value()
-	if len(data) < 6 || data[2] != 0x00 {
+	if debugReports {
+		log.Printf("report len=%d hex=%x", len(data), data)
+	}
+	buttons, ok := parseButtons(data)
+	if !ok {
 		return
 	}
-	buttons := uint32(data[3])<<16 | uint32(data[4])<<8 | uint32(data[5])
 	a.mu.Lock()
 	prev := a.prevButtons
 	a.prevButtons = buttons

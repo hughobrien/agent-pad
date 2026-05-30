@@ -25,7 +25,7 @@ The workaround: bypass HID entirely and talk to the Steam Controller's **vendor-
 ## Steam Controller GATT details
 
 - **Vendor service:** `100f6c32-1735-4313-b402-38567131e5f3`
-- **Input characteristic (notify):** `100f6c33-1735-4313-b402-38567131e5f3` — emits 19-byte reports. When byte[2] == `0x00`, bytes[3..5] hold the standard 24-bit Steam Controller button bitmap (per the canonical decoding at https://dennis-hamester.gitlab.io/scraw/protocol/). Byte[3] is the high byte; byte[5] is the low byte.
+- **Input characteristic (notify):** `100f6c33-1735-4313-b402-38567131e5f3` — emits 19-byte reports framed with a leading `0xC0` byte. Byte[1] is a **segment-flags** byte: the controller sends only the data segments that changed, and each set bit marks one present segment. The button bitmap is present only when `byte[1] & 0x10` is set, and when present occupies bytes[3..5] as the standard 24-bit Steam Controller button bitmap (per the canonical decoding at https://dennis-hamester.gitlab.io/scraw/protocol/). Byte[3] is the high byte; byte[5] is the low byte. **Do not gate on byte[2]==`0x00`:** analog segments (triggers, joystick, trackpads) and status/keepalive frames also carry byte[2]==`0x00`, and their bytes at [3..5] are not buttons — reading them as buttons makes joystick movement and trigger pulls fire spurious keystrokes.
 - **Output characteristic (write):** `100f6c34-1735-4313-b402-38567131e5f3` — accepts short framed commands. A single-segment command wraps the payload in a 2-byte BLE framing header: `0xC0` (data flag | last flag | segment 0) + opcode + opcode bytes. Writes with response are length-limited to ~20 bytes (BLE MTU).
 
 ### Disable-lizard command
@@ -82,7 +82,7 @@ A CBCentralManager owns one delegate object that implements both the CBCentralMa
 2. **Attach:** The attach helper runs `RetrieveConnectedPeripheralsWithServices` filtered by the vendor service UUID. If empty (controller asleep or unbonded), logs and returns — the main loop will poll again in 2 seconds. If populated, calls `Connect`.
 3. **Connect:** `DidConnectPeripheral` discovers the vendor service.
 4. **Discover:** `DidDiscoverCharacteristics` resolves the input and output characteristics, writes the disable-lizard command to output (with response), and enables notifications on input. Sets the `attached` flag.
-5. **Input loop:** `DidUpdateValueForCharacteristic` fires per notification. Button reports (byte[2] == 0x00) get parsed into a 24-bit bitmap; press edges trigger `sendKeystroke`.
+5. **Input loop:** `DidUpdateValueForCharacteristic` fires per notification. Reports carrying the button segment (`byte[1] & 0x10`) get parsed into a 24-bit bitmap; press edges trigger `sendKeystroke`. Analog-only and status reports are ignored.
 6. **Disconnect:** `DidDisconnectPeripheral` clears state. The main loop's poll then re-attempts attach every 2 seconds until the controller comes back.
 7. **Bluetooth off:** `CentralManagerDidUpdateState` fires with a non-PoweredOn state. Drop the peripheral; do nothing further until state returns to PoweredOn.
 
