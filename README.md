@@ -4,11 +4,11 @@
 
 # agent-pad
 
-A tiny macOS background daemon that turns a Steam Controller into a single-purpose answering machine for Claude Code (or any tmux pane). Tap **A** to send `1` to your Claude window. **B** sends `2`. **Y** sends `3`. The **forward-arrow** button (Start) sends **Enter** and the **left** button (Select) sends **→ (Right arrow)** — so you can accept Claude's autosuggested command and run it without touching your focused window.
+A tiny macOS background daemon that turns a Steam Controller into a single-purpose answering machine for Claude Code (or any tmux pane). Tap **A** to send `1` to your Claude window. **B** sends `2`. **X** sends `3`. **Y** sends a literal `y`. The **forward-arrow** button (Start) sends **Enter** and the **left** button (Select) sends **→ (Right arrow)** — so you can accept Claude's autosuggested command and run it without touching your focused window.
 
 ## What it's for
 
-Claude Code asks a lot of numbered yes/no/which-of-these questions during long agentic runs, and it also offers autosuggested commands (ghost-text completions) you accept with → and run with Enter. If Claude lives on a side monitor, every interaction means alt-tabbing over, typing a key, and finding your way back. With `agent-pad`, you keep the controller on your desk: tap **A/B/Y** for numbered answers, the **left (Select)** button to accept the autosuggested command (→), and the **forward-arrow (Start)** button to run it (Enter) — all without ever looking away.
+Claude Code asks a lot of numbered yes/no/which-of-these questions during long agentic runs, and it also offers autosuggested commands (ghost-text completions) you accept with → and run with Enter. If Claude lives on a side monitor, every interaction means alt-tabbing over, typing a key, and finding your way back. With `agent-pad`, you keep the controller on your desk: tap **A/B/X** for numbered answers, **Y** for a literal `y`, the **left (Select)** button to accept the autosuggested command (→), and the **forward-arrow (Start)** button to run it (Enter) — all without ever looking away.
 
 ## Requirements
 
@@ -63,11 +63,11 @@ var buttonToDigit = []struct {
 }{
     {btnA, "1"},
     {btnB, "2"},
-    {btnY, "3"},
+    {btnX, "3"},
+    {btnY, "y"},                  // <- a literal letter
     {btnStart, "Enter"},          // forward-arrow: run the command
     {btnSelect, "Right"},         // left button: accept the autosuggestion (→)
-    {btnX, "4"},                  // <- send another digit
-    {btnRightShoulder, "y"},      // <- or a letter
+    {btnRightShoulder, "4"},      // <- send another digit
 }
 ```
 
