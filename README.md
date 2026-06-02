@@ -4,11 +4,11 @@
 
 # agent-pad
 
-A tiny macOS background daemon that turns a Steam Controller into a single-purpose answering machine for Claude Code (or any tmux pane). Tap **A** to send `1` to your Claude window. **B** sends `2`. **Y** sends `3`. Without touching your focused window.
+A tiny macOS background daemon that turns a Steam Controller into a single-purpose answering machine for Claude Code (or any tmux pane). Tap **A** to send `1` to your Claude window. **B** sends `2`. **Y** sends `3`. The **forward-arrow** button (Start) sends **Enter** and the **left** button (Select) sends **→ (Right arrow)** — so you can accept Claude's autosuggested command and run it without touching your focused window.
 
 ## What it's for
 
-Claude Code asks a lot of numbered yes/no/which-of-these questions during long agentic runs. If Claude lives on a side monitor, every answer means alt-tabbing over, typing one key, and finding your way back. With `agent-pad`, you keep the controller on your desk and tap the answer without ever looking away.
+Claude Code asks a lot of numbered yes/no/which-of-these questions during long agentic runs, and it also offers autosuggested commands (ghost-text completions) you accept with → and run with Enter. If Claude lives on a side monitor, every interaction means alt-tabbing over, typing a key, and finding your way back. With `agent-pad`, you keep the controller on your desk: tap **A/B/Y** for numbered answers, the **left (Select)** button to accept the autosuggested command (→), and the **forward-arrow (Start)** button to run it (Enter) — all without ever looking away.
 
 ## Requirements
 
@@ -48,7 +48,7 @@ tail -f ~/Library/Logs/agent-pad.log
 
 1. Open a tmux window where you run Claude Code.
 2. Rename that window so its name ends in `-pad` — `C-b ,` then type e.g. `claude-pad`.
-3. Tap A on the controller. The digit `1` lands in that window's active pane. macOS focus stays where it is.
+3. Tap A on the controller. The digit `1` lands in that window's active pane. macOS focus stays where it is. The left (Select) button sends `→` to accept Claude's autosuggested command; the forward-arrow (Start) button sends `Enter` to run it.
 
 If no window's name ends in `-pad`, taps are silently dropped. To stop accepting taps, rename the window to anything else.
 
@@ -64,12 +64,14 @@ var buttonToDigit = []struct {
     {btnA, "1"},
     {btnB, "2"},
     {btnY, "3"},
-    {btnX, "4"},                  // <- new
-    {btnRightShoulder, "y"},      // <- send a letter instead
+    {btnStart, "Enter"},          // forward-arrow: run the command
+    {btnSelect, "Right"},         // left button: accept the autosuggestion (→)
+    {btnX, "4"},                  // <- send another digit
+    {btnRightShoulder, "y"},      // <- or a letter
 }
 ```
 
-All 18 buttons (face, shoulders, triggers, grips, trackpad clicks, Steam/Start/Select) have constants defined. Rebuild + reload with `./bootstrap.sh`.
+The send string is passed straight to `tmux send-keys`, so any tmux key name works — digits and letters, plus named keys like `Enter`, `Right`, `Left`, `Up`, `Down`, `Escape`, `BSpace`, `Tab`. All 18 buttons (face, shoulders, triggers, grips, trackpad clicks, Steam/Start/Select) have constants defined. Rebuild + reload with `./bootstrap.sh`.
 
 ## How it works
 

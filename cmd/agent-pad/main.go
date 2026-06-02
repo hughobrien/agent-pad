@@ -73,6 +73,8 @@ var buttonToDigit = []struct {
 	{btnA, "1"},
 	{btnB, "2"},
 	{btnY, "3"},
+	{btnStart, "Enter"},
+	{btnSelect, "Right"},
 }
 
 const (
